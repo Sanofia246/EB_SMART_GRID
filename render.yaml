@@ -1,0 +1,22 @@
+services:
+  # 1. The Backend (Node.js)
+  - type: web
+    name: eb-smart-grid-backend
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+
+  # 2. The Frontend (React)
+  - type: web
+    name: eb-smart-grid-frontend
+    env: static
+    plan: free
+    buildCommand: npm install && npm run build
+    publishPath: ./build
+    envVars:
+      - key: REACT_APP_API_URL
+        value: https://eb-smart-grid-backend.onrender.com
