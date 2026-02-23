@@ -1,0 +1,96 @@
+import React, { useEffect, useState } from 'react';
+import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
+
+function App() {
+  const [dailyData, setDailyData] = useState([]);
+  const [monthlyData, setMonthlyData] = useState([]);
+  const [stats, setStats] = useState({ peakTime: "Loading...", ecoTime: "Loading...", todayCost: "0" });
+
+  useEffect(() => {
+    // 1. Fetch Daily Load
+    fetch('http://localhost:5000/api/daily')
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.length > 0) {
+          // Identify the keys automatically in case names changed
+          const firstRow = data[0];
+          const loadKey = Object.keys(firstRow).find(k => k.includes('kVAh') || k === 'yhat');
+          const hourKey = Object.keys(firstRow).find(k => k.includes('hour') || k === 'ds');
+
+          // Find Peak and Eco
+          let peak = data[0];
+          let eco = data[0];
+
+          data.forEach(row => {
+            if (parseFloat(row[loadKey]) > parseFloat(peak[loadKey])) peak = row;
+            if (parseFloat(row[loadKey]) < parseFloat(eco[loadKey])) eco = row;
+          });
+
+          setDailyData(data.map(d => ({ 
+            displayHour: d[hourKey], 
+            loadValue: parseFloat(d[loadKey]) 
+          })));
+
+          setStats(prev => ({ 
+            ...prev, 
+            peakTime: peak[hourKey], 
+            ecoTime: eco[hourKey] 
+          }));
+        }
+      });
+
+    // 2. Fetch Monthly Price
+    fetch('http://localhost:5000/api/monthly')
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.length > 0) {
+          setMonthlyData(data);
+          setStats(prev => ({ ...prev, todayCost: data[0].predicted_price }));
+        }
+      });
+  }, []);
+
+  return (
+    <div style={{ backgroundColor: '#0F172A', color: '#F1F5F9', minHeight: '100vh', padding: '30px', fontFamily: 'sans-serif' }}>
+      <h1 style={{ color: '#F59E0B', textAlign: 'center', marginBottom: '40px', textTransform: 'uppercase' }}>⚡ Smart Grid Intelligence</h1>
+
+      {/* BIG STATUS BOXES */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px', marginBottom: '40px' }}>
+        
+        <div style={{ background: '#1E293B', padding: '20px', borderRadius: '16px', borderTop: '5px solid #EF4444', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }}>
+          <p style={{ color: '#94A3B8', margin: 0, fontSize: '0.9rem' }}>🚨 PEAK LOAD TIME</p>
+          <h2 style={{ fontSize: '2.5rem', margin: '10px 0' }}>{stats.peakTime}</h2>
+          <p style={{ color: '#EF4444', fontWeight: 'bold' }}>TURN OFF HEAVY LOAD</p>
+        </div>
+
+        <div style={{ background: '#1E293B', padding: '20px', borderRadius: '16px', borderTop: '5px solid #10B981' }}>
+          <p style={{ color: '#94A3B8', margin: 0, fontSize: '0.9rem' }}>✅ BEST WASHING TIME</p>
+          <h2 style={{ fontSize: '2.5rem', margin: '10px 0' }}>{stats.ecoTime}</h2>
+          <p style={{ color: '#10B981', fontWeight: 'bold' }}>SAVE ON BILLS NOW</p>
+        </div>
+
+        <div style={{ background: '#1E293B', padding: '20px', borderRadius: '16px', borderTop: '5px solid #F59E0B' }}>
+          <p style={{ color: '#94A3B8', margin: 0, fontSize: '0.9rem' }}>💰 EST. DAILY COST</p>
+          <h2 style={{ fontSize: '2.5rem', margin: '10px 0' }}>₹{stats.todayCost}</h2>
+          <p style={{ color: '#F59E0B', fontWeight: 'bold' }}>BASED ON PREDICTION</p>
+        </div>
+
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '30px' }}>
+        <div style={{ background: '#1E293B', padding: '20px', borderRadius: '16px' }}>
+          <h3>Hourly Usage Prediction</h3>
+          <ResponsiveContainer width="100%" height={300}>
+            <AreaChart data={dailyData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+              <XAxis dataKey="displayHour" stroke="#94A3B8" />
+              <YAxis stroke="#94A3B8" />
+              <Tooltip contentStyle={{ background: '#1E293B', border: 'none' }} />
+              <Area type="monotone" dataKey="loadValue" stroke="#F59E0B" fill="#F59E0B" fillOpacity={0.2} strokeWidth={3} />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+
+        <div style={{ background: '#1E293B', padding: '20px', borderRadius: '16px' }}>
+          <h3>30-Day Cost Trend</h3>
+          <ResponsiveContainer width="100%" height={3
