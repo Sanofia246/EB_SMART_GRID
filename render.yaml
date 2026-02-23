@@ -4,21 +4,19 @@ services:
     name: eb-smart-grid-backend
     env: node
     plan: free
-    rootDir: backend
+    # Adjust rootDir if your server.js is inside a 'backend' folder
+    # rootDir: backend 
     buildCommand: npm install
     startCommand: node server.js
-    envVars:
-      - key: NODE_ENV
-        value: production
 
   # 2. The Frontend (React)
   - type: web
     name: eb-smart-grid-frontend
     env: static
     plan: free
-    rootDir: frontend
-    buildCommand: npm install && npm run build
-    publishPath: ./build
+    # This assumes your 'package.json' for React is inside the 'frontend' folder
+    buildCommand: cd frontend && npm install && npm run build
+    publishPath: ./frontend/build 
     envVars:
       - key: REACT_APP_API_URL
         value: https://eb-smart-grid-backend.onrender.com
